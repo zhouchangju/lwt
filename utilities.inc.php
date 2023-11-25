@@ -2181,6 +2181,7 @@ function mask_term_in_sentence($s,$regexword) {
 
 function textwordcount($text) {
 	global $tbpref;
+	
 	return get_first_value('select count(distinct TiTextLC) as value from ' . $tbpref . 'textitems where TiIsNotWord = 0 and TiWordCount = 1 and TiTxID = ' . $text);
 }
 
@@ -2205,12 +2206,35 @@ function texttodocount($text) {
 	(textwordcount($text) - textworkcount($text)) . '&nbsp;</span>';
 }
 
+/**
+ * 查询文章中的生词
+ * TODO: 我去掉了这个条件，还没弄懂是什么意思：TiLgID = WoLgID
+ */
+function textunknownwords($text) {
+	global $tbpref;
+	$rows = get_items('select distinct TiTextLC as unknownWord from ' . $tbpref . 'textitems left join ' . $tbpref . 'words on TiTextLC = WoTextLC where TiWordCount = 1 and TiIsNotWord = 0 and TiTxID = ' . $text . ' and WoID is null');
+	$unknownWords = array();
+	foreach ($rows as $row) {
+		$unknownWords[] = $row['unknownWord'];
+	}
+	return implode(",", $unknownWords);
+}
+
+
 // -------------------------------------------------------------
 
 function texttodocount2($text) {
-	$c = textwordcount($text) - textworkcount($text);
+	$total = textwordcount($text);
+	$known = textworkcount($text);
+	$unknownWordsStr = textunknownwords($text);
+	$c = $total - $known;
+	$unknownRate = round($c / $total * 100, 2);
+	$totalSql = '';
+	$knownSql = '';
+	// $totalSql = 'select count(distinct TiTextLC) as value from ' . $tbpref . 'textitems where TiIsNotWord = 0 and TiWordCount = 1 and TiTxID = ' . $text;
+	// $knownSql = 'select count(distinct TiTextLC) as value from ' . $tbpref . 'textitems left join ' . $tbpref . 'words on TiTextLC = WoTextLC where TiWordCount = 1 and TiIsNotWord = 0 and TiTxID = ' . $text . ' and WoID is not null and TiLgID = WoLgID';
 	if ($c > 0 ) 
-		return '<span title="To Do" class="status0">&nbsp;' . $c . '&nbsp;</span>&nbsp;&nbsp;&nbsp;<input type="button" onclick="iknowall(' . $text . ');" value=" I KNOW ALL " />';
+		return '<span title="To Do" class="status0">&nbsp;' . $c . '&nbsp;</span>UnknownRate: <span title="unknownRate" class="status0" style="color:red" unknownWords="' . $unknownWordsStr . '">&nbsp;' . $unknownRate . '%&nbsp;</span>Known: <span title="Known" knownSql="' . $knownSql . '" >&nbsp;' . $known . '&nbsp;</span>Total: <span title="Total" class="status0" totalSql="' . $totalSql . '">&nbsp;' . $total . '&nbsp;</span>&nbsp;&nbsp;&nbsp;<input type="button" onclick="iknowall(' . $text . ');" value=" I KNOW ALL " />';
 	else
 		return '<span title="To Do" class="status0">&nbsp;' . $c . '&nbsp;</span>';
 }

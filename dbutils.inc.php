@@ -85,6 +85,20 @@ function get_first_value($sql) {
 	return $d;
 }
 
+
+function get_items($sql) {
+	$res = do_mysqli_query($sql);		
+	// 保存每一行的数据
+	$rows = array();
+
+	// Loop through rows and add value to array
+	while($row = mysqli_fetch_assoc($res)){
+		$rows[] = $row;
+	}
+
+	mysqli_free_result($res);
+	return $rows;
+}
 // -------------------------------------------------------------
 
 ?>
